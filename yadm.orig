@@ -135,8 +135,6 @@ function clean() {
 
 function clone() {
 
-  [ -n "$DEBUG" ] && display_private_perms "initial"
-
   #; clone will begin with a bare repo
   init
 
@@ -154,19 +152,6 @@ function clone() {
     rm -rf "$YADM_REPO"
     error_out "Unable to fetch origin $1"
   }
-  debug "Determining if repo tracks private directories"
-  for private_dir in .ssh/ .gnupg/; do
-    found_log=$("$GIT_PROGRAM" log -n 1 origin/master -- "$private_dir" 2>/dev/null)
-    if [ -n "$found_log" ]; then
-      debug "Private directory $private_dir is tracked by repo"
-      if [ ! -d "$YADM_WORK/$private_dir" ]; then
-        debug "Creating $YADM_WORK/$private_dir"
-        #shellcheck disable=SC2174
-        mkdir -m 0700 -p "$YADM_WORK/$private_dir" >/dev/null 2>&1
-      fi
-    fi
-  done
-  [ -n "$DEBUG" ] && display_private_perms "pre-merge"
   debug "Doing an initial merge of origin/master"
   git merge origin/master || {
     debug "Merge failed, doing a reset."
@@ -184,8 +169,6 @@ function clone() {
   tracked files, consider 'yadm reset --hard origin/master'
 EOF
   }
-
-  [ -n "$DEBUG" ] && display_private_perms "post-merge"
 
   CHANGES_POSSIBLE=1
 
@@ -539,16 +522,6 @@ function error_out() {
   echo -e "ERROR: $*"
   exit 1
 
-}
-
-function display_private_perms() {
-  when="$1"
-  for private_dir in .ssh .gnupg; do
-    if [ -d "$YADM_WORK/$private_dir" ]; then
-      private_perms=$(ls -ld "$YADM_WORK/$private_dir")
-      debug "$when" private dir perms "$private_perms"
-    fi
-  done
 }
 
 #; ****** Auto Functions ******
